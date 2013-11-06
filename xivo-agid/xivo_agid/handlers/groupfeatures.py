@@ -18,6 +18,7 @@
 from xivo_agid.handlers.handler import Handler
 from xivo_agid import objects
 from xivo_agid import dialplan_variables
+from xivo_dao import agid_conf_dao
 
 
 class GroupFeatures(Handler):
@@ -55,36 +56,18 @@ class GroupFeatures(Handler):
         self._id = int(self._agi.get_variable(dialplan_variables.DESTINATION_ID))
         self._referer = self._agi.get_variable(dialplan_variables.FWD_REFERER)
 
-        groupfeatures_columns = ('id', 'number', 'context', 'name',
-                                 'timeout', 'transfer_user', 'transfer_call',
-                                 'write_caller', 'write_calling', 'preprocess_subroutine')
-        queue_columns = ('musicclass',)
-        columns = ["groupfeatures." + c for c in groupfeatures_columns] + ["queue." + c for c in queue_columns]
+        res = agid_conf_dao.get_group_settings(self._id)
 
-        self._cursor.query("SELECT ${columns} FROM groupfeatures "
-                           "INNER JOIN queue "
-                           "ON groupfeatures.name = queue.name "
-                           "WHERE groupfeatures.id = %s "
-                           "AND groupfeatures.deleted = 0 "
-                           "AND queue.category = 'group' "
-                           "AND queue.commented = 0",
-                           columns,
-                           (self._id,))
-        res = self._cursor.fetchone()
-
-        if not res:
-            raise LookupError("Unable to find group (id: %s)" % (self._id))
-
-        self._number = res['groupfeatures.number']
-        self._context = res['groupfeatures.context']
-        self._name = res['groupfeatures.name']
-        self._timeout = res['groupfeatures.timeout']
-        self._transfer_user = res['groupfeatures.transfer_user']
-        self._transfer_call = res['groupfeatures.transfer_call']
-        self._write_caller = res['groupfeatures.write_caller']
-        self._write_calling = res['groupfeatures.write_calling']
-        self._preprocess_subroutine = res['groupfeatures.preprocess_subroutine']
-        self._musicclass = res['queue.musicclass']
+        self._number = res['number']
+        self._context = res['context']
+        self._name = res['name']
+        self._timeout = res['timeout']
+        self._transfer_user = res['transfer_user']
+        self._transfer_call = res['transfer_call']
+        self._write_caller = res['write_caller']
+        self._write_calling = res['write_calling']
+        self._preprocess_subroutine = res['preprocess_subroutine']
+        self._musicclass = res['musicclass']
 
     def _set_vars(self):
         self._agi.set_variable('XIVO_REAL_NUMBER', self._number)
