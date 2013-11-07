@@ -23,7 +23,7 @@ from xivo_agid.schedule import ScheduleAction, SchedulePeriodBuilder, Schedule, 
 from xivo_dao.data_handler.line import services as line_services
 from xivo_dao.data_handler.user import services as user_services
 
-from xivo_dao import user_dao, user_line_dao
+from xivo_dao import user_dao, user_line_dao, agid_conf_dao
 
 logger = logging.getLogger(__name__)
 
@@ -699,38 +699,25 @@ class Queue:
         return [str(row[0]) for row in res]
 
 
-class Agent:
+class Agent(object):
     def __init__(self, agi, cursor, xid=None, number=None):
         self.agi = agi
         self.cursor = cursor
 
-        columns = ('id', 'number', 'passwd', 'firstname', 'lastname', 'language', 'preprocess_subroutine')
-
         if xid:
-            cursor.query("SELECT ${columns} FROM agentfeatures "
-                         "WHERE id = %s ",
-                         columns,
-                         (xid,))
+            agent = agid_conf_dao.get_agent(xid)
         elif number:
-            cursor.query("SELECT ${columns} FROM agentfeatures "
-                         "WHERE number = %s ",
-                         columns,
-                         (number,))
+            agent = agid_conf_dao.get_agent_with_number(number)
         else:
             raise LookupError("id or number must be provided to look up an agent")
 
-        res = cursor.fetchone()
-
-        if not res:
-            raise LookupError("Unable to find agent (id: %s, number: %s)" % (xid, number))
-
-        self.id = res['id']
-        self.number = res['number']
-        self.passwd = res['passwd']
-        self.firstname = res['firstname']
-        self.lastname = res['lastname']
-        self.language = res['language']
-        self.preprocess_subroutine = res['preprocess_subroutine']
+        self.id = agent['id']
+        self.number = agent['number']
+        self.passwd = agent['passwd']
+        self.firstname = agent['firstname']
+        self.lastname = agent['lastname']
+        self.language = agent['language']
+        self.preprocess_subroutine = agent['preprocess_subroutine']
 
 
 class DialAction(object):
