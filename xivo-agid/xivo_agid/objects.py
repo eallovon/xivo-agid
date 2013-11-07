@@ -309,19 +309,10 @@ class User(object):
             self.enablevoicemail = 0
 
     def disable_forwards(self):
-        self.cursor.query("UPDATE userfeatures "
-                          "SET enablebusy = 0, "
-                          "    enablerna = 0, "
-                          "    enableunc = 0 "
-                          "WHERE id = %s",
-                          parameters=(self.id,))
-
-        if self.cursor.rowcount != 1:
-            raise DBUpdateException("Unable to perform the requested update")
-        else:
-            self.enablebusy = 0
-            self.enablerna = 0
-            self.enableunc = 0
+        user_dao.disable_forwards(self.id)
+        self.enablebusy = 0
+        self.enablerna = 0
+        self.enableunc = 0
 
     def set_feature(self, feature, enabled, arg):
         enabled = int(bool(enabled))
@@ -335,24 +326,30 @@ class User(object):
             raise ValueError("invalid feature")
 
         if dest is not None:
-            self.cursor.query("UPDATE userfeatures "
-                              "SET enable%s = %%s, "
-                              "    dest%s = %%s "
-                              "WHERE id = %%s" % (feature, feature),
-                              parameters=(enabled, dest, self.id))
+            if feature == 'unc' and enabled == 1:
+                user_dao.enable_unconditional_fwd(self.id, dest)
+            elif feature == 'unc' and enabled == 0:
+                user_dao.disable_unconditional_fwd(self.id, dest)
+            elif feature == 'rna' and enabled == 1:
+                user_dao.enable_rna_fwd(self.id, dest)
+            elif feature == 'rna' and enabled == 0:
+                user_dao.disable_rna_fwd(self.id, dest)
+            elif feature == 'busy' and enabled == 1:
+                user_dao.enable_busy_fwd(self.id, dest)
+            elif feature == 'busy' and enabled == 0:
+                user_dao.disable_busy_fwd(self.id, dest)
         else:
-            self.cursor.query("UPDATE userfeatures "
-                              "SET enable%s = %%s "
-                              "WHERE id = %%s" % feature,
-                              parameters=(enabled, self.id))
+            if feature == 'unc':
+                user_dao.update_unconditional_fwd(self.id, enabled)
+            elif feature == 'rna':
+                user_dao.update_rna_fwd(self.id, enabled)
+            elif feature == 'busy':
+                user_dao.update_busy_fwd(self.id, enabled)
 
-        if self.cursor.rowcount != 1:
-            raise DBUpdateException("Unable to perform the requested update")
-        else:
-            setattr(self, "enable%s" % feature, enabled)
+        setattr(self, "enable%s" % feature, enabled)
 
-            if dest is not None:
-                setattr(self, "dest%s" % feature, dest)
+        if dest is not None:
+            setattr(self, "dest%s" % feature, dest)
 
     def toggle_feature(self, feature):
         if feature == "vm":
@@ -365,15 +362,24 @@ class User(object):
 
         enabled = int(not getattr(self, feature))
 
-        self.cursor.query("UPDATE userfeatures "
-                          "SET %s = %%s "
-                          "WHERE id = %%s" % feature,
-                          parameters=(enabled, self.id))
+        if feature == 'enablevoicemail' and enabled == 1:
+            user_dao.enable_voicemail(self.id)
+        elif feature == 'enablevoicemail' and enabled == 0:
+            user_dao.disable_voicemail(self.id)
+        elif feature == 'enablednd' and enabled == 1:
+            user_dao.enable_dnd(self.id)
+        elif feature == 'enablednd' and enabled == 0:
+            user_dao.disable_dnd(self.id)
+        elif feature == 'callrecord' and enabled == 1:
+            user_dao.enable_recording(self.id)
+        elif feature == 'callrecord' and enabled == 0:
+            user_dao.disable_recording(self.id)
+        elif feature == 'incallfilter' and enabled == 1:
+            user_dao.enable_filter(self.id)
+        elif feature == 'incallfilter' and enabled == 0:
+            user_dao.disable_filter(self.id)
 
-        if self.cursor.rowcount != 1:
-            raise DBUpdateException("Unable to perform the requested update")
-        else:
-            setattr(self, feature, enabled)
+        setattr(self, feature, enabled)
 
 
 class MeetMe(object):
