@@ -17,6 +17,7 @@
 
 from xivo_agid import objects
 from xivo_agid.handlers.handler import Handler
+from xivo_dao import agid_conf_dao
 
 
 class AgentFeatures(Handler):
@@ -40,19 +41,10 @@ class AgentFeatures(Handler):
 
     def _set_agent_interface(self):
         try:
-            device = self._get_agent_device()
+            device = agid_conf_dao.get_agent_device(self.agent_id)
         except LookupError as e:
             self._agi.dp_break(str(e))
         self._agi.set_variable('XIVO_AGENT_INTERFACE', device)
-
-    def _get_agent_device(self):
-        self._cursor.query('SELECT state_interface FROM agent_login_status WHERE agent_id  = %s',
-                           parameters=(self.agent_id,))
-        res = self._cursor.fetchone()
-        if not res:
-            raise LookupError('Unable to find agent (id: %s)' % self.agent_id)
-        device = res[0]
-        return device
 
     def _set_agent(self):
         try:
