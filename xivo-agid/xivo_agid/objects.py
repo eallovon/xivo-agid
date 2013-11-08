@@ -59,17 +59,10 @@ class ExtenFeatures:
 
         self.featureslist = tuple(featureslist)
 
-        self.cursor.query("SELECT ${columns} FROM extensions "
-                          "WHERE typeval IN (" + ", ".join(["%s"] * len(self.featureslist)) + ") "
-                          "AND commented = 0",
-                          ('typeval',),
-                          self.featureslist)
-        res = self.cursor.fetchall()
-
-        if not res:
+        try:
+            enabled_features = agid_conf_dao.get_extensions_enabled_in(self.featureslist)
+        except LookupError:
             enabled_features = []
-        else:
-            enabled_features = [row['typeval'] for row in res]
 
         for feature in self.featureslist:
             setattr(self, feature, (feature in enabled_features))
