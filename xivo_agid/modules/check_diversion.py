@@ -51,7 +51,7 @@ def check_diversion(agi, cursor, args):
         agents = agi.get_variable('XIVO_QUEUE_MEMBERS_COUNT')
 
         if int(agents) == 0 or \
-                int(waitingcalls) + 1 / int(agents) > (queue.waitratio / 100):
+                (int(waitingcalls) + 1) / int(agents) > (queue.waitratio / 100):
             event = 'DIVERT_CA_RATIO'
             dialaction = 'qwaitratio'
 
